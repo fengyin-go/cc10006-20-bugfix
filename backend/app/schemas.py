@@ -21,6 +21,18 @@ class ActionResult(BaseModel):
     entry: dict[str, Any] | None = None
 
 
+class AuditActionResult(BaseModel):
+    """操作审计动作回执：状态、异常标记与页面回执必须同一份结果。"""
+
+    ok: bool
+    message: str
+    entry: dict[str, Any] | None = None
+    # 与概览/质量通知同源的统一快照，保证各页面看到的异常量、影响行数吻合
+    snapshot: dict[str, Any] | None = None
+    applied: bool = True
+    idempotent: bool = False
+
+
 class EntryPayload(BaseModel):
     """登记或修改一条业务记录时提交的字段集合。"""
 

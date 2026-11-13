@@ -18,6 +18,16 @@
       </article>
     </div>
 
+    <section class="notice-box" v-if="auditNotifications.length">
+      <h3 class="notice-title">质量通知（来自操作审计的待审核真实异常，与运营概览异常量同口径）</h3>
+      <ul class="notice-list">
+        <li v-for="note in auditNotifications" :key="note.id">
+          <span class="status-badge">{{ note.状态 }}</span>
+          {{ note.日志编号 }} · {{ note.操作类型 }} · {{ note.操作对象 }} · 影响行数 {{ note.影响行数 }}
+        </li>
+      </ul>
+    </section>
+
     <form class="filter-bar" @submit.prevent="reload">
       <label v-for="field in filterFields" :key="field" class="filter-item">
         <span>{{ field }}</span>
@@ -80,6 +90,22 @@ const total = ref(0)
 const errorMessage = ref('')
 const filters = ref<Record<string, string>>({})
 const filterFields = columns.slice(0, 3)
+const auditNotifications = ref<
+  { id: number; 日志编号: string; 操作类型: string; 操作对象: string; 状态: string; 影响行数: number }[]
+>([])
+
+async function loadAuditNotifications() {
+  // 与运营概览、操作审计详情读取同一份结果，忽略掉的日志不会出现在通知里
+  try {
+    const response = await request('/api/audit/notifications')
+    if (response.ok) {
+      const payload = await response.json()
+      auditNotifications.value = payload.notifications ?? []
+    }
+  } catch {
+    auditNotifications.value = []
+  }
+}
 
 function resetFilters() {
   filters.value = {}
@@ -126,5 +152,30 @@ async function reload() {
   }
 }
 
-onMounted(reload)
+onMounted(() => {
+  void reload()
+  void loadAuditNotifications()
+})
 </script>
+
+<style scoped>
+.notice-box {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-left: 4px solid #d92d20;
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-bottom: 12px;
+}
+.notice-title { font-size: 13px; margin: 0 0 6px; }
+.notice-list { margin: 0; padding-left: 4px; list-style: none; display: grid; gap: 4px; font-size: 13px; }
+.status-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  border: 1px solid #fedf89;
+  background: #fffaeb;
+  color: #b54708;
+}
+</style>
